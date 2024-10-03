@@ -187,6 +187,129 @@ long numberInRange(const string& prompt, long minValue, long maxValue) {
     }
 }
 
+void saveToFile(const Pipe& pipe, const CS& cs) {
+    ofstream outFile("data.txt");
+    if (outFile.is_open()) {
+        if (!pipe.name.empty()) {
+            outFile << "PIPE" << endl;
+            outFile << pipe.name << endl;
+            outFile << pipe.length << endl;
+            outFile << pipe.diameter << endl;
+            outFile << (pipe.repairStatus ? "1" : "0") << endl;
+        }
+
+        if (!cs.name.empty()) {
+            outFile << "CS" << endl;
+            outFile << cs.name << endl;
+            outFile << cs.workshopNumber << endl;
+            outFile << cs.workshopNumberInWork << endl;
+            outFile << cs.efficiency << endl;
+        }
+
+        outFile.close();
+        cout << "Данные сохранены в файл data.txt" << endl;
+    }
+    else {
+        cout << "Не удалось открыть файл для записи" << endl;
+    }
+}
+
+void loadFromFile(Pipe& pipe, CS& cs) {
+    int a;
+    int b;
+    double c;
+    string name;
+    ifstream inFile("data.txt");
+    if (inFile.is_open()) {
+        string line;
+        while (getline(inFile, line)) {
+            try {
+                if (line == "PIPE") {
+                    getline(inFile, pipe.name);
+
+                    getline(inFile, line);
+                    pipe.length = stod(line);
+
+                    getline(inFile, line);
+                    pipe.diameter = stod(line);
+
+                    getline(inFile, line);
+                    pipe.repairStatus = (line == "1") ? true : false;
+
+                    if (pipe.length < 0.1 || pipe.length > 1000) {
+                        cerr << "Ошибка. Длина трубы из файла некорректна." << endl;
+                        inFile.close();
+                        return;
+                    }
+                    if (pipe.diameter < 1 || pipe.diameter > 10000) {
+                        cerr << "Ошибка. Диаметр трубы из файла некорректен." << endl;
+                        inFile.close();
+                        return;
+                    }
+                }
+                else if (line == "CS") {
+                    getline(inFile, name);
+                    getline(inFile, line);
+                    a = stoi(line);
+
+                    getline(inFile, line);
+                    b = stoi(line);
+
+                    getline(inFile, line);
+                    c = stoi(line);
+
+                    if (a > 1 and a < 100 and b > 1 and b < a and c > 0.1 and c < 100) {
+                        getline(inFile, cs.name);
+
+                        getline(inFile, line);
+                        cs.workshopNumber = stoi(line);
+
+                        getline(inFile, line);
+                        cs.workshopNumberInWork = stoi(line);
+
+                        getline(inFile, line);
+                        cs.efficiency = stoi(line);
+                    }
+
+                    if (a < 1 || a > 100) {
+                        cerr << "Ошибка. Количество цехов из файла некорректно." << endl;
+                        inFile.close();
+                        return;
+                    }
+                    if (cs.workshopNumberInWork < 1 || cs.workshopNumberInWork > cs.workshopNumber) {
+                        cerr << "Ошибка. Количество рабочих цехов из файла некорректно." << endl;
+                        inFile.close();
+                        return;
+                    }
+                    if (cs.efficiency < 0.1 || cs.efficiency > 100) {
+                        cerr << "Ошибка. Эффективность из файла некорректна." << endl;
+                        inFile.close();
+                        return;
+                    }
+                }
+            }
+            catch (const invalid_argument& e) {
+                cerr << "Ошибка. Некорректный формат данных в файле." << endl;
+                pipe.name = "";
+                cs.name = "";
+                inFile.close();
+                return;
+            }
+            catch (const out_of_range& e) {
+                cerr << "Ошибка. Значение из файла выходит за пределы допустимого диапазона." << endl;
+                inFile.close();
+                return;
+            }
+        }
+        inFile.close();
+        cout << "Данные загружены из файла data.txt" << endl;
+    }
+    else {
+        cout << "Не удалось открыть файл для чтения" << endl;
+    }
+}
+
+
 int main() {
     Pipe pipe;
     CS cs;
@@ -221,6 +344,12 @@ int main() {
             break;
         case 5:
             cs.editWorkshop();
+            break;
+        case 6:
+            saveToFile(pipe, cs);
+            break;
+        case 7:
+            loadFromFile(pipe, cs);
             break;
         case 0:
             cout << "Выход из программы." << endl;
